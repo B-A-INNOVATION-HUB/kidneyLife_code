@@ -1,5 +1,5 @@
 
-KidneyLife AI 🩺
+KidneyLife AI 
 
 AI-Powered Kidney CT Image Classification
 
