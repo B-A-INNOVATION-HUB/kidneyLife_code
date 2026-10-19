@@ -7,95 +7,94 @@ __pycache__/
 *.so
 .Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+.eggs/
 
 # ============================================
 # Virtual Environments
 # ============================================
 venv/
 env/
-ENV/
 .venv/
-env.bak/
-venv.bak/
+ENV/
 .python-version
 
 # ============================================
-# Jupyter Notebook
+# Jupyter
 # ============================================
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
-profile_default/
-ipython_config.py
 
 # ============================================
-# Datasets & Medical Images
+# DATASETS — split CT images + raw data
 # ============================================
 data/
 datasets/
-dataset/
-images/
 raw/
 processed/
 train/
-test/
 val/
+test/
 *.zip
 *.tar.gz
 *.rar
 *.7z
 
 # ============================================
-# Trained Models & Checkpoints
+# TRAINED CLASSIFIER MODELS
 # ============================================
 models/
 checkpoints/
-saved_models/
-weights/
 *.h5
 *.hdf5
 *.keras
 *.pb
+*.tflite
+*.onnx
 *.pkl
 *.joblib
-*.onnx
-*.tflite
-*.pt
-*.pth
-*.ckpt
-*.safetensors
 
 # ============================================
-# TensorFlow / Keras Artifacts
+# TRAINING LOGS & TENSORBOARD
 # ============================================
-tensorboard/
 logs/
+tensorboard/
 events.out.tfevents.*
-*.tensorboard
+*.log
+logs/**/*.csv
+outputs/**/*.csv
+results/**/*.csv
+training_history.csv
+*_history.csv
+*_history.json
 
 # ============================================
-# Kaggle API Credentials 
+# CLASSIFICATION EVALUATION OUTPUTS
+# ============================================
+outputs/
+results/
+plots/
+figures/
+*.png
+*.jpg
+*.jpeg
+!docs/**/*.png
+!README*.png
+predictions.csv
+classification_report*.txt
+confusion_matrix*.png
+roc_curve*.png
+*.npy
+
+# ============================================
+# Kaggle API — SENSITIVE
 # ============================================
 kaggle.json
 .kaggle/
 
 # ============================================
-# Environment & Secrets
+# Secrets / Env
 # ============================================
 .env
 .env.*
@@ -106,63 +105,27 @@ secrets/
 credentials.json
 
 # ============================================
-# Outputs & Results
-# ============================================
-outputs/
-results/
-plots/
-figures/
-*.csv
-*.xlsx
-*.png
-*.jpg
-*.jpeg
-!docs/**/*.png
-!README*.png
-
-# ============================================
-# IDE & Editor Settings
+# IDE / Editor
 # ============================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-.spyderproject
-.spyproject
-.project
-.pydevproject
 
 # ============================================
-# OS-Specific
+# OS
 # ============================================
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
 Thumbs.db
-ehthumbs.db
 Desktop.ini
 
 # ============================================
-# Logs & Temporary Files
+# Caches
 # ============================================
-*.log
-logs/
-tmp/
-temp/
 .cache/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
 htmlcov/
-.tox/
-.nox/
-
-# ============================================
-# Docker
-# ============================================
-.dockerignore
-docker-compose.override.yml
