@@ -137,3 +137,47 @@ class_importance = {number: float(weight) for number, weight in enumerate(weight
 
 print("Class weights:", {KIDNEY_CLASSES[n]: round(w, 3) for n, w in class_importance.items()})
 print("=" * 100)
+
+
+# ==================================================================================================
+# PART 4 - LOADING THE IMAGES
+# ==================================================================================================
+
+print("Loading the images...")
+
+train_images = image_dataset_from_directory(
+    train_folder,                  # read from the train folder
+    labels="inferred",             # the label of each image comes from the name of the folder it is in
+    label_mode="categorical",      # labels become one-hot, e.g. Stone = [0, 0, 1, 0]
+    class_names=KIDNEY_CLASSES,    # keeps the class order the same as our list
+    color_mode="grayscale",        # CT scans are black and white, so 1 colour channel is enough
+    image_size=PICTURE_SIZE,       # resize every image to 128 x 128
+    batch_size=IMAGES_PER_BATCH,   # group the images into batches of 32
+    shuffle=True,                  # mix the order so the model does not learn the order of the images
+    seed=RANDOM_SEED               # the same mix every run
+)
+
+validation_images = image_dataset_from_directory(
+    validation_folder,             # read from the validation folder
+    labels="inferred",
+    label_mode="categorical",
+    class_names=KIDNEY_CLASSES,
+    color_mode="grayscale",
+    image_size=PICTURE_SIZE,
+    batch_size=IMAGES_PER_BATCH,
+    shuffle=False                  # no shuffling, so the validation score is steady
+)
+
+test_images = image_dataset_from_directory(
+    test_folder,                   # read from the test folder
+    labels="inferred",
+    label_mode="categorical",
+    class_names=KIDNEY_CLASSES,
+    color_mode="grayscale",
+    image_size=PICTURE_SIZE,
+    batch_size=IMAGES_PER_BATCH,
+    shuffle=False                  # no shuffling, so the predictions stay in the same order as the true labels
+)
+
+print("Images loaded")
+print("=" * 100)
