@@ -75,3 +75,65 @@ test_folder = os.path.join(split_folder, "test")                    # 15% of the
 script_folder = os.path.dirname(os.path.abspath(__file__))                 # the folder this python file is saved in
 saved_model_file = os.path.join(script_folder, "kidneylife_model.keras")   # the trained model is saved next to this file
 print("=" * 100)
+
+
+# ==================================================================================================
+# PART 3 - SPLITTING THE IMAGES INTO TRAIN, VALIDATION AND TEST FOLDERS
+# ==================================================================================================
+
+import shutil                                                  # copies image files from one folder to another
+from sklearn.utils.class_weight import compute_class_weight    # works out how important each class should be
+
+print("Splitting the images into train (70%), validation (15%) and test (15%)...")
+
+finished_marker = os.path.join(split_folder, "split_done.txt")   # this file is written when the split finishes, so we only split once
+
+if os.path.exists(finished_marker):                              # the split was already done on an earlier run
+    print("The images were already split on an earlier run, using that split")
+else:
+    if os.path.exists(split_folder):                             # a split that stopped half way is still there
+        shutil.rmtree(split_folder)                              # delete it so we start clean
+
+    for kidney_class in KIDNEY_CLASSES:                          # split each class on its own so every set has all 4 classes
+        class_folder = os.path.join(dataset_folder, kidney_class)    
+        # list only the image files and sort them, so the seeded shuffle gives the same order every time
+        image_files = sorted([f for f in os.listdir(class_folder) if f.lower().endswith((".jpg", ".jpeg", ".png"))])
+        random.shuffle(image_files)                              # mix the images so the split is random
+
+        total = len(image_files)                                 # how many images this class has
+        train_stop = int(total * 0.70)                           # the first 70% go to training
+        validation_stop = train_stop + int(total * 0.15)         # the next 15% go to validation, the rest go to testing
+
+        groups = {
+            "train": image_files[:train_stop],                       # from the start up to train_stop
+            "validation": image_files[train_stop:validation_stop],   # from train_stop up to validation_stop
+            "test": image_files[validation_stop:]                    # from validation_stop to the end
+        }
+
+        for group_name, files in groups.items():                             # for train, validation and test
+            target_folder = os.path.join(split_folder, group_name, kidney_class)   
+            os.makedirs(target_folder, exist_ok=True)                        # create the folder if it does not exist yet
+            for file_name in files:                                          # copy each image into its new folder
+                shutil.copy(os.path.join(class_folder, file_name), os.path.join(target_folder, file_name))
+
+        print(kidney_class, ":", total, "images split")
+
+    with open(finished_marker, "w") as marker:                   # write the marker file so the next run skips the split
+        marker.write("split complete")
+
+# ---- class weights: there are many more Normal images than Stone images ----
+images_per_class = []                                                          # will hold the number of training images in each class
+for kidney_class in KIDNEY_CLASSES:
+    amount = len(os.listdir(os.path.join(train_folder, kidney_class)))          # count the training images in this class
+    images_per_class.append(amount)                                             # add the count to the list
+    print("Training images for", kidney_class, ":", amount)
+
+# make one label per training image (0 = Cyst, 1 = Normal, 2 = Stone, 3 = Tumor)
+all_train_labels = np.concatenate([np.full(amount, number) for number, amount in enumerate(images_per_class)])
+
+# "balanced" gives small classes a bigger weight so the model does not ignore them
+weights = compute_class_weight(class_weight="balanced", classes=np.arange(len(KIDNEY_CLASSES)), y=all_train_labels)
+class_importance = {number: float(weight) for number, weight in enumerate(weights)}   # Keras wants a dictionary {class number: weight}
+
+print("Class weights:", {KIDNEY_CLASSES[n]: round(w, 3) for n, w in class_importance.items()})
+print("=" * 100)
