@@ -181,3 +181,37 @@ test_images = image_dataset_from_directory(
 
 print("Images loaded")
 print("=" * 100)
+
+# ==================================================================================================
+# PART 5 - CLEANING AND AUGMENTING THE IMAGES
+# ==================================================================================================
+
+from keras import layers               # building blocks: rescaling and augmentation here, CNN layers in part 6
+from keras.models import Sequential    # stacks layers in order (used for the augmentation here and the CNN in part 6)
+
+print("Normalising and augmenting the images...")
+
+scale_pixels = layers.Rescaling(1.0 / 255)   # changes pixel values from 0-255 to 0-1, which helps the network learn
+
+# augmentation = small random changes, so the model sees a slightly different version of each image every epoch
+image_changer = Sequential([
+    layers.RandomFlip("horizontal"),         # sometimes mirror the image from left to right
+    layers.RandomRotation(0.05),             # rotate a little (up to about 18 degrees)
+    layers.RandomZoom(0.1),                  # zoom in or out by up to 10%
+    layers.RandomTranslation(0.05, 0.05),    # move the image up/down and left/right by up to 5%
+    layers.RandomContrast(0.1)               # make the image a little lighter or darker
+], name="image_changer")
+
+AUTO = tf.data.AUTOTUNE   # lets tensorflow choose the best speed settings for this computer
+
+train_images = train_images.cache()   # keep the original training images in memory, so they are only read from disk once
+train_images = train_images.map(lambda pics, labels: (scale_pixels(image_changer(pics, training=True)), labels),
+                                num_parallel_calls=AUTO)   # augment then normalise - this happens again every epoch
+train_images = train_images.prefetch(AUTO)   # get the next batch ready while the current batch is training
+
+# validation and test images are only normalised, never augmented, so the scores are fair
+validation_images = validation_images.map(lambda pics, labels: (scale_pixels(pics), labels)).cache().prefetch(AUTO)
+test_images = test_images.map(lambda pics, labels: (scale_pixels(pics), labels)).cache().prefetch(AUTO)
+
+print("Images ready")
+print("=" * 100)
