@@ -215,3 +215,68 @@ test_images = test_images.map(lambda pics, labels: (scale_pixels(pics), labels))
 
 print("Images ready")
 print("=" * 100)
+
+# ==================================================================================================
+# PART 6 - BUILDING AND TRAINING THE CNN 
+# ==================================================================================================
+
+from keras import metrics                    # gives us Precision and Recall to track while training
+from keras.models import load_model          # opens a model that was trained and saved on an earlier run
+from keras.optimizers import Adam            # the optimizer that updates the weights while the model learns
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau   # helpers that run after every epoch (explained below)
+
+kidney_model = None   # no model yet
+
+if os.path.exists(saved_model_file):   # a model was trained and saved on an earlier run
+    answer = input("A saved model was found. Type L to load it or T to train a new one:   ").strip().lower()
+    if answer == "l":                                  # the user wants the saved model
+        kidney_model = load_model(saved_model_file)    # open the saved model, no training needed
+        print("Saved model loaded")
+
+if kidney_model is None:   # no saved model, or the user chose to train a new one
+    print("Building the Convolutional Neural Network...")
+
+    kidney_model = Sequential(name="kidneylife_cnn")   # an empty model that we fill layer by layer
+
+    kidney_model.add(layers.Input(shape=(PICTURE_SIZE[0], PICTURE_SIZE[1], 1)))   # input: a 128 x 128 image with 1 channel
+
+    # 4 feature blocks: each Conv2D finds patterns (edges, shapes, textures) and each MaxPooling2D halves the image size
+    # the number of filters doubles in each block (32, 64, 128, 256) so deeper blocks can learn more detailed patterns
+    for filter_count in [32, 64, 128, 256]:
+        kidney_model.add(layers.Conv2D(filter_count, (3, 3), padding="same", activation="relu"))   # 3 x 3 filters, relu keeps only positive values
+        kidney_model.add(layers.MaxPooling2D((2, 2)))                                              # keep the strongest value in every 2 x 2 area
+
+    kidney_model.add(layers.Flatten())                        # turn the 2D feature maps into one long list of numbers
+    kidney_model.add(layers.Dense(128, activation="relu"))    # 128 neurons that combine the patterns to make a decision
+    kidney_model.add(layers.Dropout(0.5))                     # randomly switch off half the neurons while training to stop overfitting
+    kidney_model.add(layers.Dense(len(KIDNEY_CLASSES), activation="softmax"))   # 4 outputs, one probability per class, they add up to 1
+
+    kidney_model.compile(
+        optimizer=Adam(learning_rate=0.001),          # Adam adjusts the weights, 0.001 is the size of each step
+        loss="categorical_crossentropy",              # the error measure for choosing one class out of many
+        metrics=["accuracy",                          # % of images classified correctly
+                 metrics.Precision(name="precision"), # of the images the model called a class, how many really were that class
+                 metrics.Recall(name="recall")]       # of the images that really were a class, how many the model found
+    )
+
+    kidney_model.summary()   # print a table of the layers and the number of parameters
+
+    training_helpers = [
+        EarlyStopping(monitor="val_loss", patience=4, restore_best_weights=True, verbose=1),   # stop if validation loss does not improve for 4 epochs, then go back to the best epoch
+        ModelCheckpoint(saved_model_file, monitor="val_loss", save_best_only=True, verbose=1),  # save the model every time it gets better
+        ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=2, verbose=1)               # halve the learning rate if it gets stuck for 2 epochs
+    ]
+
+    print("Training the CNN... (this can take a while on a laptop)")
+    kidney_model.fit(
+        train_images,                         # the images the model learns from
+        validation_data=validation_images,    # the images it is checked on after each epoch
+        epochs=MAX_EPOCHS,                    # the most epochs to train for
+        class_weight=class_importance,        # pay more attention to the classes with fewer images
+        callbacks=training_helpers,           # early stopping, saving and learning-rate reduction
+        verbose=1                             # show a progress bar
+    )
+
+    print("Training finished. Best model saved at:", saved_model_file)
+
+print("=" * 100)
