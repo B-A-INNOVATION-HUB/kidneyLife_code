@@ -309,6 +309,53 @@ plt.title("KidneyLife AI - Confusion Matrix (Test Images)")
 plt.tight_layout()
 plt.show()   # close the window to continue the program
 
+# ==================================================================================================
+# PART 8 - CLASSIFYING ONE CT IMAGE AT A TIME
+# ==================================================================================================
+
+from keras.utils import load_img, img_to_array   # opens one image from disk and turns it into numbers
+
+batch_count = int(test_images.cardinality().numpy())   # how many batches the test set has
+
+while True:   # keep asking until the user types no
+    choice = input("Press Enter for a random test image, paste the path of your own CT image, or type No to exit:   ").strip().strip('"')
+
+    if choice.lower() == "no":   # the user wants to stop
+        print("Thank you for using KidneyLife AI")
+        break                    # leave the loop and end the program
+
+    if choice == "":   # Enter was pressed - pick a random image from the test set
+        random_batch = np.random.randint(0, batch_count)                  # pick a random batch number
+        for pics, labels in test_images.skip(random_batch).take(1):       # skip to that batch and take it
+            pick = np.random.randint(0, pics.shape[0])                    # pick a random image inside the batch
+            ct_image = pics[pick].numpy()                                 # the image as numbers
+            real_class = KIDNEY_CLASSES[int(np.argmax(labels[pick].numpy()))]   # its true class
+    else:   # the user typed a file path
+        if not os.path.exists(choice):   # the file does not exist
+            print("Image not found, please check the path and try again")
+            continue                     # ask again
+
+        opened = load_img(choice, color_mode="grayscale", target_size=PICTURE_SIZE)   # open the image as grayscale 128 x 128, like the training images
+        ct_image = img_to_array(opened) / 255.0                                      # turn it into numbers between 0 and 1
+        real_class = "Unknown"                                                       # we do not know the true class of the user's own image
+
+    chances = kidney_model.predict(np.expand_dims(ct_image, axis=0), verbose=0)[0]   # the model expects a batch, so we wrap the 1 image in a batch
+    best = int(np.argmax(chances))                    # the position of the highest probability
+    predicted_name = KIDNEY_CLASSES[best]             # turn that position into the class name
+    confidence = float(chances[best])                 # how sure the model is
+
+    print("Confidence for each class:")
+    for kidney_class, chance in zip(KIDNEY_CLASSES, chances):   # print every class with its probability
+        print(f"   {kidney_class}: {chance:.2%}")
+
+    if confidence < TRUST_LEVEL:   # the model is not sure enough
+        print(f"WARNING: confidence is below {TRUST_LEVEL:.0%} - this scan should be checked by a radiologist")
+
+    plt.imshow(ct_image.squeeze(), cmap="gray")   # show the CT image in black and white
+    plt.axis("off")                               # hide the x and y axis
+    plt.title(f"Predicted: {predicted_name} | Confidence: {confidence:.2%} | Actual: {real_class}")
+    plt.show()                                    # close the window to classify the next image
+    print("=" * 100)
 # precision, recall and f1-score for every class
 print("Classification report:")
 print(classification_report(true_classes, predicted_classes, target_names=KIDNEY_CLASSES, digits=4))
