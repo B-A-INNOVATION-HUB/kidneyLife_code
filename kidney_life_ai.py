@@ -280,3 +280,36 @@ if kidney_model is None:   # no saved model, or the user chose to train a new on
     print("Training finished. Best model saved at:", saved_model_file)
 
 print("=" * 100)
+
+# ==================================================================================================
+# PART 7 - TESTING THE CNN ON UNSEEN IMAGES
+# ==================================================================================================
+
+import matplotlib.pyplot as plt    # draws the confusion matrix (and shows the CT images in part 8)
+from sklearn.metrics import confusion_matrix, classification_report, ConfusionMatrixDisplay   # tools for the test results report
+
+print("Testing the model on images it has never seen...")
+
+scores = kidney_model.evaluate(test_images, verbose=0, return_dict=True)   # loss, accuracy, precision and recall on the test images
+print(f"Test Loss: {scores['loss']:.4f}")
+print(f"Test Accuracy: {scores['accuracy']:.4f}")
+print(f"Test Precision: {scores['precision']:.4f}")
+print(f"Test Recall: {scores['recall']:.4f}")
+
+class_probabilities = kidney_model.predict(test_images, verbose=0)   # 4 probabilities for every test image
+predicted_classes = np.argmax(class_probabilities, axis=1)           # the class with the highest probability is the prediction
+
+# the true class of every test image, in the same order (because test_images was not shuffled)
+true_classes = np.concatenate([np.argmax(labels.numpy(), axis=1) for _, labels in test_images])
+
+# confusion matrix: rows = true class, columns = predicted class, the diagonal shows correct predictions
+results_table = confusion_matrix(true_classes, predicted_classes)
+ConfusionMatrixDisplay(results_table, display_labels=KIDNEY_CLASSES).plot(cmap="Greens", values_format="d")
+plt.title("KidneyLife AI - Confusion Matrix (Test Images)")
+plt.tight_layout()
+plt.show()   # close the window to continue the program
+
+# precision, recall and f1-score for every class
+print("Classification report:")
+print(classification_report(true_classes, predicted_classes, target_names=KIDNEY_CLASSES, digits=4))
+print("=" * 100)
