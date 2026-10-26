@@ -1,6 +1,16 @@
 # ==================================================================================================
 # KIDNEYLIFE AI - CT KIDNEY IMAGE CLASSIFIER
 # Classifies abdominal CT kidney images into 4 groups: Cyst, Normal, Stone and Tumor
+#
+# The code runs from top to bottom in 8 parts:
+#   PART 1 - Libraries and settings
+#   PART 2 - Finding the dataset
+#   PART 3 - Splitting the images into train, validation and test folders
+#   PART 4 - Loading the images
+#   PART 5 - Cleaning and augmenting the images
+#   PART 6 - Building and training the CNN (or loading a saved one)
+#   PART 7 - Testing the CNN on unseen images
+#   PART 8 - Classifying one CT image at a time
 
 #==================================================================================================
 
@@ -9,9 +19,23 @@
 # PART 1 - LIBRARIES AND SETTINGS
 # ==================================================================================================
 
-import random                      # Python's own random numbers - used for the seed and for shuffling images in part 3
+import os                          # works with folders and file paths on the computer
+import sys                         # lets us stop the program early if something important is missing
+import shutil                      # copies image files from one folder to another
+import random                      # shuffles the image list before we split it
 import numpy as np                 # works with arrays (lists of numbers) and does the maths
 import tensorflow as tf            # the deep learning engine that Keras runs on
+import matplotlib.pyplot as plt    # draws the confusion matrix and shows the CT images on screen
+
+from keras import layers, metrics                                  # layers = building blocks of the network, metrics = precision and recall
+from keras.models import Sequential, load_model                    # Sequential = stacks layers in order, load_model = opens a saved model
+from keras.utils import image_dataset_from_directory               # reads images straight from the class folders
+from keras.utils import load_img, img_to_array                     # opens one image from disk and turns it into numbers
+from keras.optimizers import Adam                                  # the optimizer that updates the weights while the model learns
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau   # helpers that run after every epoch (explained in part 6)
+
+from sklearn.metrics import confusion_matrix, classification_report, ConfusionMatrixDisplay   # tools for the test results report
+from sklearn.utils.class_weight import compute_class_weight                                   # works out how important each class should be
 
 # ---- project settings (change them here, and they change everywhere below) ----
 RANDOM_SEED = 2025                                  # fixed number, so the split and the training give the same result every run
@@ -34,8 +58,6 @@ print("=" * 100)
 # PART 2 - FINDING THE DATASET
 # ==================================================================================================
 
-import os                          # works with folders and file paths on the computer
-import sys                         # lets us stop the program early if something important is missing
 
 print("Looking for the CT kidney dataset...")
 
@@ -80,9 +102,6 @@ print("=" * 100)
 # ==================================================================================================
 # PART 3 - SPLITTING THE IMAGES INTO TRAIN, VALIDATION AND TEST FOLDERS
 # ==================================================================================================
-
-import shutil                                                  # copies image files from one folder to another
-from sklearn.utils.class_weight import compute_class_weight    # works out how important each class should be
 
 print("Splitting the images into train (70%), validation (15%) and test (15%)...")
 
@@ -186,9 +205,6 @@ print("=" * 100)
 # PART 5 - CLEANING AND AUGMENTING THE IMAGES
 # ==================================================================================================
 
-from keras import layers               # building blocks: rescaling and augmentation here, CNN layers in part 6
-from keras.models import Sequential    # stacks layers in order (used for the augmentation here and the CNN in part 6)
-
 print("Normalising and augmenting the images...")
 
 scale_pixels = layers.Rescaling(1.0 / 255)   # changes pixel values from 0-255 to 0-1, which helps the network learn
@@ -219,11 +235,6 @@ print("=" * 100)
 # ==================================================================================================
 # PART 6 - BUILDING AND TRAINING THE CNN 
 # ==================================================================================================
-
-from keras import metrics                    # gives us Precision and Recall to track while training
-from keras.models import load_model          # opens a model that was trained and saved on an earlier run
-from keras.optimizers import Adam            # the optimizer that updates the weights while the model learns
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau   # helpers that run after every epoch (explained below)
 
 kidney_model = None   # no model yet
 
@@ -285,9 +296,6 @@ print("=" * 100)
 # PART 7 - TESTING THE CNN ON UNSEEN IMAGES
 # ==================================================================================================
 
-import matplotlib.pyplot as plt    # draws the confusion matrix (and shows the CT images in part 8)
-from sklearn.metrics import confusion_matrix, classification_report, ConfusionMatrixDisplay   # tools for the test results report
-
 print("Testing the model on images it has never seen...")
 
 scores = kidney_model.evaluate(test_images, verbose=0, return_dict=True)   # loss, accuracy, precision and recall on the test images
@@ -312,8 +320,6 @@ plt.show()   # close the window to continue the program
 # ==================================================================================================
 # PART 8 - CLASSIFYING ONE CT IMAGE AT A TIME
 # ==================================================================================================
-
-from keras.utils import load_img, img_to_array   # opens one image from disk and turns it into numbers
 
 batch_count = int(test_images.cardinality().numpy())   # how many batches the test set has
 
